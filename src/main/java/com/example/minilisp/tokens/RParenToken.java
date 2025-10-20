@@ -1,8 +1,7 @@
 package com.example.minilisp.tokens;
 
-public class RParenToken extends Token {
+import lombok.NoArgsConstructor;
 
-    protected RParenToken(TokenType type) {
-        super(type);
-    }
+@NoArgsConstructor
+public class RParenToken extends Token {
 }

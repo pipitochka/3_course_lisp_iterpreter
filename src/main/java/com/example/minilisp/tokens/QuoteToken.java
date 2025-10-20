@@ -1,9 +1,7 @@
 package com.example.minilisp.tokens;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class QuoteToken extends Token {
-
-    protected QuoteToken(TokenType type) {
-        super(type);
-    }
-
 }

@@ -1,9 +1,12 @@
 package com.example.minilisp;
 
-public class App 
+import com.example.minilisp.lexer.Lexer;
+
+public class App
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+//        Lexer lexer = new Lexer();
+//        System.out.println( "Hello World!" );
     }
 }

@@ -1,14 +1,11 @@
 package com.example.minilisp.tokens;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public class StringToken extends Token {
 
     private final String value;
-
-    protected StringToken(TokenType type, String value) {
-        super(type);
-        this.value = value;
-    }
 }

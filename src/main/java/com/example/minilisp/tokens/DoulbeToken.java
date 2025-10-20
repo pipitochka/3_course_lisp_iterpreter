@@ -1,14 +1,12 @@
 package com.example.minilisp.tokens;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
+@AllArgsConstructor
 public class DoulbeToken extends Token {
 
     private final double value;
-
-    protected DoulbeToken(TokenType type, double value) {
-        super(type);
-        this.value = value;
-    }
 }
