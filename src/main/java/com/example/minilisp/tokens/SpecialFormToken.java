@@ -9,4 +9,8 @@ public class SpecialFormToken extends Token {
 
     private final SpecialForm specialForm;
 
+    @Override
+    public String toString() {
+        return specialForm.toString();
+    }
 }

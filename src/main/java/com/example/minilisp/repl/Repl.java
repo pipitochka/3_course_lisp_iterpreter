@@ -1,5 +1,6 @@
 package com.example.minilisp.repl;
 
+import com.example.minilisp.evaluator.Evaluator;
 import com.example.minilisp.lexer.Lexer;
 import com.example.minilisp.parser.Expression;
 import com.example.minilisp.parser.Parser;
@@ -8,6 +9,7 @@ import com.example.minilisp.tokens.Token;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
@@ -93,8 +95,9 @@ public class Repl {
             List<Token> tokens = lexer.tokenize();
             Parser parser = new Parser(tokens);
             Expression expression = parser.parse();
-
-            System.out.println("End");
+            Evaluator evaluator = new Evaluator(new HashMap<>());
+            Expression result = evaluator.evaluate(expression);
+            System.out.println(result.toString());
 
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());

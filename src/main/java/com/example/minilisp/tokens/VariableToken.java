@@ -8,4 +8,9 @@ import lombok.Getter;
 public class VariableToken extends Token {
 
     private final String value;
+
+    @Override
+    public String toString() {
+        return value;
+    }
 }

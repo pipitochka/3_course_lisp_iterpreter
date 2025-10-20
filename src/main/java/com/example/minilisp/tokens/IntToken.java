@@ -8,4 +8,9 @@ import lombok.Getter;
 public class IntToken extends Token {
 
     private final int value;
+
+    @Override
+    public String toString() {
+        return Integer.toString(value);
+    }
 }

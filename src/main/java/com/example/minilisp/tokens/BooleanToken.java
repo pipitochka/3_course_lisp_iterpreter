@@ -8,4 +8,9 @@ import lombok.Getter;
 public class BooleanToken extends Token {
 
     boolean value;
+
+    @Override
+    public String toString() {
+        return value ? "true" : "false";
+    }
 }

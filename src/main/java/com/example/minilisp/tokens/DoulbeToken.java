@@ -9,4 +9,9 @@ import lombok.RequiredArgsConstructor;
 public class DoulbeToken extends Token {
 
     private final double value;
+
+    @Override
+    public String toString() {
+        return Double.toString(value);
+    }
 }

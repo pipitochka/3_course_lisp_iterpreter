@@ -8,4 +8,10 @@ import lombok.Getter;
 public class StringToken extends Token {
 
     private final String value;
+
+
+    @Override
+    public String toString() {
+        return "\"" + value + "\"";
+    }
 }

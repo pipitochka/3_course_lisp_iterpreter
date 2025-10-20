@@ -4,4 +4,8 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class RParenToken extends Token {
+    @Override
+    public String toString() {
+        return ")";
+    }
 }
