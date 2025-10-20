@@ -43,7 +43,7 @@ public class Lexer {
                     pos++;
                     continue;
                 case '\'':
-                    tokens.add(new SpecialFormToken(SpecialForm.QUOTE));
+                    tokens.add(new QuoteToken());
                     pos++;
                     continue;
                 case '"':
@@ -159,6 +159,7 @@ public class Lexer {
             case ">=": return new OperatorToken(Operators.GE);
             case "<=": return new OperatorToken(Operators.LE);
             case "!=": return new OperatorToken(Operators.NE);
+            case "==": return new OperatorToken(Operators.EQ);
             default:
                 return new VariableToken(symbol);
         }

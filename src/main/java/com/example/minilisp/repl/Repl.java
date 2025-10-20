@@ -16,6 +16,8 @@ import java.util.Scanner;
 
 public class Repl {
 
+    private static HashMap<String, Expression> enviroments = new HashMap<>();
+
     public static void main(String[] args) {
         if (args.length > 1 && args[0].equals("--file")) {
             runFile(args[1]);
@@ -95,7 +97,10 @@ public class Repl {
             List<Token> tokens = lexer.tokenize();
             Parser parser = new Parser(tokens);
             Expression expression = parser.parse();
-            Evaluator evaluator = new Evaluator(new HashMap<>());
+            if (!parser.isValid()){
+                throw new RuntimeException("Error: invalid expression");
+            }
+            Evaluator evaluator = new Evaluator(enviroments);
             Expression result = evaluator.evaluate(expression);
             System.out.println(result.toString());
 

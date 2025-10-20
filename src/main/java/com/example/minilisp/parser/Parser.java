@@ -1,12 +1,11 @@
 package com.example.minilisp.parser;
 
 import com.example.minilisp.exceptions.IncorrectParenCounter;
-import com.example.minilisp.tokens.LParenToken;
-import com.example.minilisp.tokens.RParenToken;
-import com.example.minilisp.tokens.Token;
+import com.example.minilisp.tokens.*;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,6 +25,16 @@ public class Parser {
     private Expression parseExp() {
         Token token = tokens.get(pos++);
 
+        if (token instanceof QuoteToken) {
+            Expression expr = parseExp();
+            return new ListExpressions(
+                    Arrays.asList(
+                            new AtomExpression(new SpecialFormToken(SpecialForm.QUOTE)),
+                            expr
+                    )
+            );
+        }
+
         if (token instanceof LParenToken){
             List<Expression> list = new ArrayList<>();
             while (!(tokens.get(pos) instanceof RParenToken)){
@@ -39,6 +48,10 @@ public class Parser {
         }
 
         return new AtomExpression(token);
+    }
+
+    public boolean isValid() {
+        return pos >= tokens.size();
     }
 
 }

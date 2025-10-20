@@ -1,9 +1,6 @@
 package com.example.minilisp.evaluator;
 
-import com.example.minilisp.exceptions.DivisionByZeroException;
-import com.example.minilisp.exceptions.InvalidAmountOfArgs;
-import com.example.minilisp.exceptions.InvalidArgumentException;
-import com.example.minilisp.exceptions.InvalidVariable;
+import com.example.minilisp.exceptions.*;
 import com.example.minilisp.parser.AtomExpression;
 import com.example.minilisp.parser.Expression;
 import com.example.minilisp.parser.ListExpressions;
@@ -11,14 +8,16 @@ import com.example.minilisp.tokens.*;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
+import java.lang.UnsupportedOperationException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 
 @RequiredArgsConstructor
 public class Evaluator {
 
-    private final HashMap<String, Token> enviroment;
+    private final HashMap<String, Expression> enviroment;
 
     public Expression evaluate(Expression expression) {
         if (expression instanceof AtomExpression atom){
@@ -34,10 +33,11 @@ public class Evaluator {
         Token token = atom.getToken();
 
         if (token instanceof VariableToken variable){
-            Token value = enviroment.get(variable.getValue());
+            Expression value = enviroment.get(variable.getValue());
             if (value == null) {
                 throw new InvalidVariable(variable.getValue());
             }
+            return value;
         }
 
         return atom;
@@ -49,22 +49,22 @@ public class Evaluator {
         }
 
         Expression first = list.getExpressions().get(0);
-        Expression operator = evaluate(first);
 
-        List<Expression> args = new ArrayList<>();
-        for (int i = 1; i < list.getExpressions().size(); i++) {
-            args.add(evaluate(list.getExpressions().get(i)));
-        }
-
-        if (operator instanceof AtomExpression atom){
-            if (atom.getToken() instanceof OperatorToken operatorToken){
+        if (first instanceof AtomExpression atom) {
+            if (atom.getToken() instanceof OperatorToken operatorToken) {
+                List<Expression> args = new ArrayList<>();
+                for (int i = 1; i < list.getExpressions().size(); i++) {
+                    args.add(evaluate(list.getExpressions().get(i)));
+                }
                 return applyOperator(operatorToken, args);
-            } else if (atom.getToken() instanceof SpecialFormToken specialFormToken){
+
+            } else if (atom.getToken() instanceof SpecialFormToken specialFormToken) {
+                List<Expression> args = list.getExpressions().subList(1, list.getExpressions().size());
                 return applySpecialForm(specialFormToken, args);
             }
         }
 
-        throw new RuntimeException("Unsupported operator: " + operator);
+        return list;
     }
 
     private AtomExpression applyOperator(OperatorToken operatorToken, List<Expression> args) {
@@ -85,10 +85,6 @@ public class Evaluator {
         }
 
         return new AtomExpression(acc);
-    }
-
-    private Expression applySpecialForm(SpecialFormToken specialFormToken, List<Expression> args) {
-        return null;
     }
 
     private Token combine(Token a, Token b, OperatorToken op){
@@ -186,4 +182,203 @@ public class Evaluator {
         }
         throw new UnsupportedOperationException(op.toString());
     }
+
+
+
+//    SYMBOL,
+//    DEF,
+//    SET
+    private Expression applySpecialForm(SpecialFormToken specialFormToken, List<Expression> args) {
+        switch (specialFormToken.getSpecialForm()){
+            case QUOTE -> {
+                if (args.size() != 1) {
+                    throw new QuoteTooManyArgs(args.size());
+                }
+                return evaluate(args.get(0));
+            }
+            case EVAL -> {
+                return evaluate(new ListExpressions(args));
+            }
+            case TYPEOF -> {
+                return new ListExpressions(
+                        args.stream()
+                                .map(this::evaluate)
+                                .map(expr -> {
+                                    if (expr instanceof AtomExpression atom) {
+                                        if (atom.getToken() instanceof StringToken) {
+                                            return new AtomExpression(new StringToken("string"));
+                                        }
+                                        if (atom.getToken() instanceof IntToken) {
+                                            return new AtomExpression(new StringToken("int"));
+                                        }
+                                        if (atom.getToken() instanceof DoulbeToken) {
+                                            return new AtomExpression(new StringToken("double"));
+                                        }
+                                        if (atom.getToken() instanceof NilToken) {
+                                            return new AtomExpression(new StringToken("nil"));
+                                        }
+                                        if (atom.getToken() instanceof BooleanToken) {
+                                            return new AtomExpression(new StringToken("boolean"));
+                                        }
+                                        if (atom.getToken() instanceof SpecialFormToken) {
+                                            return new AtomExpression(new StringToken("SF"));
+                                        }
+                                        if (atom.getToken() instanceof OperatorToken) {
+                                            return new AtomExpression(new StringToken("operator"));
+                                        }
+                                    }
+                                    if (expr instanceof ListExpressions list) {
+                                        return new AtomExpression(new StringToken("list"));
+                                    }
+                                    return new AtomExpression(new StringToken("unknown"));
+                                })
+                                .<Expression>map(e->e)
+                                .toList());
+            }
+            case CONS -> {
+                if (args.size() != 2) {
+                    throw new InvalidArgumentException("CONS expects 2 arguments");
+                }
+                Expression first = evaluate(args.get(0));
+                Expression second = evaluate(args.get(1));
+
+                List<Expression> result = new ArrayList<>();
+                result.add(first); // вставляем первый аргумент как есть
+
+                if (second instanceof ListExpressions list) {
+                    result.addAll(list.getExpressions()); // раскрываем только второй аргумент
+                } else {
+                    result.add(second);
+                }
+
+                return new ListExpressions(result);
+            }
+            case CAR -> {
+                var first = args.get(0);
+                var calculed = evaluate(first);
+                if (calculed instanceof AtomExpression atom) {
+                    return atom;
+                } else if (calculed instanceof ListExpressions list) {
+                    if (list.getExpressions().isEmpty()) {
+                        return new AtomExpression(new NilToken());
+                    }
+                    return list.getExpressions().get(0);
+                }
+            }
+            case CDR -> {
+                var first = evaluate(args.get(0));
+                if (first instanceof ListExpressions list) {
+                    return new ListExpressions(
+                            list.getExpressions().subList(1, list.getExpressions().size())
+                    );
+                }
+                throw new CdrInvalidArgument(args.toString());
+            }
+            case IF -> {
+                if (args.size() != 3) {
+                    throw new IfInvalidArguments(args.toString());
+                }
+                var calculed = evaluate(args.get(0));
+                if (calculed instanceof AtomExpression atom) {
+                    if (atom.getToken() instanceof BooleanToken booleanToken) {
+                        if (booleanToken.isValue()) {
+                            return evaluate(args.get(1));
+                        }
+                        else {
+                            return evaluate(args.get(2));
+                        }
+                    }
+                }
+                throw new IfInvalidArguments(args.toString());
+            }
+            case DO -> {
+                Expression expr = new AtomExpression(new NilToken());
+                for (Expression expression : args) {
+                    expr = evaluate(expression);
+                }
+                return expr;
+            }
+            case PRINT -> {
+                if (args.size() != 1) {
+                    throw new PrintInvalidArgumentException(args.toString());
+                }
+                var result = evaluate(args.get(0));
+                System.out.println(result);
+                return result;
+            }
+            case READ -> {
+                Scanner scanner = new Scanner(System.in);
+                String input = scanner.nextLine();
+                return new AtomExpression(new StringToken(input));
+            }
+            case SYMBOL -> {
+                if (args.size() != 1) {
+                    throw new SymbolArgumentException(args.toString());
+                }
+                var result = evaluate(args.get(0));
+                if (result instanceof AtomExpression atom) {
+                    if (atom.getToken() instanceof StringToken stringToken) {
+                        return new AtomExpression(new VariableToken(stringToken.getValue()));
+                    }
+                }
+                throw new SymbolArgumentException(result.toString());
+            }
+            case DEF -> {
+                if (args.size() != 2) {
+                    throw new DefArgumentException(args.toString());
+                }
+
+                var keyExpr = args.get(0);
+                var valueExpr = evaluate(args.get(1));
+
+                if (keyExpr instanceof AtomExpression keyAtom) {
+                    if (keyAtom.getToken() instanceof VariableToken variableToken) {
+                        if (enviroment.get(variableToken.getValue()) == null) {
+                            enviroment.put(variableToken.getValue(), valueExpr);
+                            return valueExpr;
+                        }
+                        else {
+                            throw new DefArgumentException("Exsits");
+                        }
+                    } else {
+                        throw new DefArgumentException("Expected a string as variable name");
+                    }
+                } else {
+                    throw new DefArgumentException("Invalid arguments for DEF");
+                }
+            }
+            case SET -> {
+                if (args.size() != 2) {
+                    throw new SetArgumentException(args.toString());
+                }
+
+                var keyExpr = args.get(0);
+                var valueExpr = evaluate(args.get(1));
+
+                if (!(keyExpr instanceof AtomExpression keyAtom)) {
+                    throw new SetArgumentException("Expected variable name as first argument");
+                }
+
+                if (!(keyAtom.getToken() instanceof VariableToken variableToken)) {
+                    throw new SetArgumentException("Expected string as variable name");
+                }
+
+                String varName = variableToken.getValue();
+
+                if (!enviroment.containsKey(varName)) {
+                    throw new InvalidVariable(varName);
+                }
+
+                if (!(valueExpr instanceof AtomExpression valAtom)) {
+                    throw new SetArgumentException("Expected atom as value");
+                }
+
+                enviroment.put(varName, valAtom);
+                return valAtom;
+            }
+            default -> throw new UnsupportedSpecialForm(specialFormToken.toString());
+        }
+        throw new UnsupportedSpecialForm(specialFormToken.toString());
+    }
+
 }
