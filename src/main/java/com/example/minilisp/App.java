@@ -1,13 +1,12 @@
 package com.example.minilisp;
 
-/**
- * Hello world!
- *
- */
-public class App 
+import com.example.minilisp.repl.Repl;
+
+public class App
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+        Repl repl = new Repl();
+        repl.main(args);
     }
 }
