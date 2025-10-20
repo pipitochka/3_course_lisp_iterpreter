@@ -1,0 +1,13 @@
+(do
+  (print "input a number")
+  (def n (read))
+  (def res 1)
+  ; (print (+ n 1))
+  (def f '(do
+		(set! res (* res n))
+		(set! n (- n 1))
+		(if (< 0 n) (eval f) 0)
+	    ))
+  (eval f)
+  (print res)
+)

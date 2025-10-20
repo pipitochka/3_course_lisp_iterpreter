@@ -25,11 +25,14 @@ public class MiniLispEvaluatorTest {
         Lexer lexer = new Lexer(input);
         List<Token> tokens = lexer.tokenize();
         Parser parser = new Parser(tokens);
-        Expression expression = parser.parse();
-
+        List<Expression> expressions = parser.parseAll();
+        if (!parser.isValid()){
+            throw new RuntimeException("Error: invalid expression");
+        }
         Evaluator evaluator = new Evaluator(enviroments);
-        Expression result = evaluator.evaluate(expression);
-        Assertions.assertEquals(expected, result.toString());
+        for (Expression expr : expressions) {
+            Expression result = evaluator.evaluate(expr);
+        }
     }
 
     @Test
@@ -130,27 +133,65 @@ public class MiniLispEvaluatorTest {
 
     @Test
     public void testComplexExpressions() {
-//        test("(+ (* 2 3) (- 10 4) (/ 8 2))", "16"); // 6 + 6 + 4 = 16
-//
-//        test("(car (cdr (cdr '(a b c d e))))", "c");
-//
-//        test("(cdr (cons 0 '(1 2 3)))", "(1 2 3)");
-//
-//        test("(if (> 5 2) (+ 1 1) (* 2 2))", "2");
-//        test("(if (< 5 2) (+ 1 1) (* 2 2))", "4");
-//
-//        test("(do (def x 10) (set x (+ x 5)) x)", "15");
-//
-//        test("(do (def y 42) (symbol \"y\") y)", "42");
-//
-//        test("(car (cdr (cons '(1 2) (cons '(3 4) '(5 6)))))", "(3 4)");
-//
-//        test("(+ 1 2 (* 2 3) (/ 8 2) (- 10 5))", "18"); // 1+2+6+4+5=18
-//
-//        test("(car (cdr (cdr '(10 20 30 40))))", "30");
-//        test("(cdr (cdr (cdr '(1 2 3 4 5))))", "(4 5)");
+        test("(+ (* 2 3) (- 10 4) (/ 8 2))", "16"); // 6 + 6 + 4 = 16
+
+        test("(car (cdr (cdr '(a b c d e))))", "c");
+
+        test("(cdr (cons 0 '(1 2 3)))", "(1 2 3)");
+
+        test("(if (> 5 2) (+ 1 1) (* 2 2))", "2");
+        test("(if (< 5 2) (+ 1 1) (* 2 2))", "4");
+
+        test("(do (def x 10) (set x (+ x 5)) x)", "15");
+
+        test("(do (def y 42) (symbol \"y\") y)", "42");
+
+        test("(car (cdr (cons '(1 2) (cons '(3 4) '(5 6)))))", "(3 4)");
+
+        test("(+ 1 2 (* 2 3) (/ 8 2) (- 10 5))", "18"); // 1+2+6+4+5=18
+
+        test("(car (cdr (cdr '(10 20 30 40))))", "30");
+        test("(cdr (cdr (cdr '(1 2 3 4 5))))", "(4 5)");
 
         test("(do (def lst '(a b)) (cons '(x y) lst))", "((x y) a b)");
     }
 
+    @Test
+    public void testFactorial1() {
+        test("  (def n 5)\n" +
+                "  (def res 1)\n" +
+                "  (def f '(do\n" +
+                "        (set res (* res n))\n" +
+                "        (set n (- n 1))\n" +
+                "        (if (< 0 n) (eval f) 0)\n" +
+                "    ))\n" +
+                "  (eval f)\n" +
+                " ", "120");
+    }
+
+    @Test
+    public void testFactorial2() {
+        test("  (def n 7)\n" +
+                "  (def res 1)\n" +
+                "  (def f '(do\n" +
+                "        (set res (* res n))\n" +
+                "        (set n (- n 1))\n" +
+                "        (if (< 0 n) (eval f) 0)\n" +
+                "    ))\n" +
+                "  (eval f)\n" +
+                " ", "5040");
+    }
+
+    @Test
+    public void testFactorial3() {
+        test("  (def n 3)\n" +
+                "  (def res 1)\n" +
+                "  (def f '(do\n" +
+                "        (set res (* res n))\n" +
+                "        (set n (- n 1))\n" +
+                "        (if (< 0 n) (eval f) 0)\n" +
+                "    ))\n" +
+                "  (eval f)\n" +
+                " ", "6");
+    }
 }

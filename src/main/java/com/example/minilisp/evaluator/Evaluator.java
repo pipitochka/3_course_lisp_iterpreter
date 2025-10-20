@@ -14,10 +14,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
-@RequiredArgsConstructor
+
 public class Evaluator {
 
     private final HashMap<String, Expression> enviroment;
+
+    private Scanner inputScanner;
+
+    public Evaluator(HashMap<String, Expression> hashMap) {
+        enviroment = hashMap;
+    }
+
+    public Evaluator(HashMap<String, Expression> hashMap, Scanner scanner) {
+        enviroment = hashMap;
+        inputScanner = scanner;
+    }
 
     public Expression evaluate(Expression expression) {
         if (expression instanceof AtomExpression atom){
@@ -184,20 +195,24 @@ public class Evaluator {
     }
 
 
-
-//    SYMBOL,
-//    DEF,
-//    SET
     private Expression applySpecialForm(SpecialFormToken specialFormToken, List<Expression> args) {
         switch (specialFormToken.getSpecialForm()){
             case QUOTE -> {
                 if (args.size() != 1) {
                     throw new QuoteTooManyArgs(args.size());
                 }
-                return evaluate(args.get(0));
+                return args.get(0);
             }
             case EVAL -> {
-                return evaluate(new ListExpressions(args));
+                if (args.size() != 1) {
+                    throw new InvalidArgumentException("EVAL expects 1 argument");
+                }
+                Expression value = evaluate(args.get(0));
+                if (value instanceof ListExpressions list) {
+                    return evaluate(list);
+                } else {
+                    throw new InvalidArgumentException("EVAL expects a list, got: " + value);
+                }
             }
             case TYPEOF -> {
                 return new ListExpressions(
@@ -243,10 +258,10 @@ public class Evaluator {
                 Expression second = evaluate(args.get(1));
 
                 List<Expression> result = new ArrayList<>();
-                result.add(first); // вставляем первый аргумент как есть
+                result.add(first);
 
                 if (second instanceof ListExpressions list) {
-                    result.addAll(list.getExpressions()); // раскрываем только второй аргумент
+                    result.addAll(list.getExpressions());
                 } else {
                     result.add(second);
                 }
@@ -307,9 +322,23 @@ public class Evaluator {
                 return result;
             }
             case READ -> {
-                Scanner scanner = new Scanner(System.in);
-                String input = scanner.nextLine();
-                return new AtomExpression(new StringToken(input));
+                String input = inputScanner.nextLine().trim();
+
+                if (input.equals("true") || input.equals("false")) {
+                    return new AtomExpression(new BooleanToken(Boolean.parseBoolean(input)));
+                }
+
+                try {
+                    if (input.contains(".")) {
+                        double d = Double.parseDouble(input);
+                        return new AtomExpression(new DoulbeToken(d));
+                    } else {
+                        int i = Integer.parseInt(input);
+                        return new AtomExpression(new IntToken(i));
+                    }
+                } catch (NumberFormatException e) {
+                    return new AtomExpression(new StringToken(input));
+                }
             }
             case SYMBOL -> {
                 if (args.size() != 1) {
@@ -369,12 +398,8 @@ public class Evaluator {
                     throw new InvalidVariable(varName);
                 }
 
-                if (!(valueExpr instanceof AtomExpression valAtom)) {
-                    throw new SetArgumentException("Expected atom as value");
-                }
-
-                enviroment.put(varName, valAtom);
-                return valAtom;
+                enviroment.put(varName, valueExpr);
+                return valueExpr;
             }
             default -> throw new UnsupportedSpecialForm(specialFormToken.toString());
         }

@@ -12,11 +12,15 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 
 public class Repl {
 
     private static HashMap<String, Expression> enviroments = new HashMap<>();
+
+    private static final Scanner scanner = new Scanner(System.in);
+
 
     public static void main(String[] args) {
         if (args.length > 1 && args[0].equals("--file")) {
@@ -83,7 +87,9 @@ public class Repl {
 
     private static void runFile(String filename) {
         try {
-            String code = Files.readString(Path.of(filename));
+            String code = Files.readAllLines(Path.of(filename))
+                    .stream()
+                    .collect(Collectors.joining("\n"));
             System.out.println("Executing file: " + filename);
             execute(code);
         } catch (IOException e) {
@@ -96,13 +102,16 @@ public class Repl {
             Lexer lexer = new Lexer(code);
             List<Token> tokens = lexer.tokenize();
             Parser parser = new Parser(tokens);
-            Expression expression = parser.parse();
+            List<Expression> expressions = parser.parseAll();
+            //System.out.println(expression.toString());
             if (!parser.isValid()){
                 throw new RuntimeException("Error: invalid expression");
             }
-            Evaluator evaluator = new Evaluator(enviroments);
-            Expression result = evaluator.evaluate(expression);
-            System.out.println(result.toString());
+            Evaluator evaluator = new Evaluator(enviroments, scanner);
+            for (Expression expr : expressions) {
+                Expression result = evaluator.evaluate(expr);
+                //System.out.println(result);
+            }
 
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
