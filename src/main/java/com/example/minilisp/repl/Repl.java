@@ -1,5 +1,6 @@
 package com.example.minilisp.repl;
 
+import com.example.minilisp.enviroment.Environment;
 import com.example.minilisp.evaluator.Evaluator;
 import com.example.minilisp.lexer.Lexer;
 import com.example.minilisp.parser.Expression;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class Repl {
 
-    private static HashMap<String, Expression> enviroments = new HashMap<>();
+    private static Environment environment = new Environment();
 
     private static final Scanner scanner = new Scanner(System.in);
 
@@ -107,7 +108,7 @@ public class Repl {
             if (!parser.isValid()){
                 throw new RuntimeException("Error: invalid expression");
             }
-            Evaluator evaluator = new Evaluator(enviroments, scanner);
+            Evaluator evaluator = new Evaluator(environment, scanner);
             for (Expression expr : expressions) {
                 Expression result = evaluator.evaluate(expr);
                 //System.out.println(result);

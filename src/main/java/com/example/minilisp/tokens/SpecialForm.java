@@ -13,5 +13,6 @@ public enum SpecialForm {
     READ,
     SYMBOL,
     DEF,
-    SET
+    SET,
+    LAMBDA
 }

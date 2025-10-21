@@ -1,5 +1,6 @@
 package com.example.minilisp;
 
+import com.example.minilisp.enviroment.Environment;
 import com.example.minilisp.evaluator.Evaluator;
 import com.example.minilisp.lexer.Lexer;
 import com.example.minilisp.parser.Expression;
@@ -14,11 +15,11 @@ import java.util.List;
 
 public class MiniLispEvaluatorTest {
 
-    private HashMap<String, Expression> enviroments;
+    private Environment enviroments;
 
     @BeforeEach
     public void setup() {
-        enviroments = new HashMap<>();
+        enviroments = new Environment();
     }
 
     private void test(String input, String expected) {
@@ -193,5 +194,16 @@ public class MiniLispEvaluatorTest {
                 "    ))\n" +
                 "  (eval f)\n" +
                 " ", "6");
+    }
+
+    @Test
+    public void testLambda() {
+        test("((lambda (x y) (+ x y)) 2 3)", "6");
+    }
+
+    @Test
+    public void testLambda2() {
+        test("(def add (lambda (a b) (+ a b)))\n"  +
+                "(add 10 20)", "30");
     }
 }

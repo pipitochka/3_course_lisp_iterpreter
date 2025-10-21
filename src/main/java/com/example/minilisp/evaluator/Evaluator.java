@@ -1,12 +1,12 @@
 package com.example.minilisp.evaluator;
 
+import com.example.minilisp.enviroment.Environment;
 import com.example.minilisp.exceptions.*;
 import com.example.minilisp.parser.AtomExpression;
 import com.example.minilisp.parser.Expression;
+import com.example.minilisp.parser.LambdaExpression;
 import com.example.minilisp.parser.ListExpressions;
 import com.example.minilisp.tokens.*;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.lang.UnsupportedOperationException;
 import java.util.ArrayList;
@@ -17,16 +17,17 @@ import java.util.Scanner;
 
 public class Evaluator {
 
-    private final HashMap<String, Expression> enviroment;
+    private final Environment environment;
 
     private Scanner inputScanner;
 
-    public Evaluator(HashMap<String, Expression> hashMap) {
-        enviroment = hashMap;
+    public Evaluator(Environment environment) {
+
+        this.environment = environment;
     }
 
-    public Evaluator(HashMap<String, Expression> hashMap, Scanner scanner) {
-        enviroment = hashMap;
+    public Evaluator(Environment environment, Scanner scanner) {
+        this.environment = environment;
         inputScanner = scanner;
     }
 
@@ -35,7 +36,11 @@ public class Evaluator {
             return evalAtom(atom);
         } else if (expression instanceof ListExpressions list){
             return evalList(list);
-        } else {
+        } else if (expression instanceof LambdaExpression lambda){
+            return lambda;
+        }
+
+        else {
             throw new RuntimeException("Unsupported expression: " + expression);
         }
     }
@@ -44,7 +49,7 @@ public class Evaluator {
         Token token = atom.getToken();
 
         if (token instanceof VariableToken variable){
-            Expression value = enviroment.get(variable.getValue());
+            Expression value = environment.get(variable.getValue());
             if (value == null) {
                 throw new InvalidVariable(variable.getValue());
             }
@@ -68,11 +73,20 @@ public class Evaluator {
                     args.add(evaluate(list.getExpressions().get(i)));
                 }
                 return applyOperator(operatorToken, args);
-
             } else if (atom.getToken() instanceof SpecialFormToken specialFormToken) {
                 List<Expression> args = list.getExpressions().subList(1, list.getExpressions().size());
                 return applySpecialForm(specialFormToken, args);
             }
+            Expression func = evaluate(atom);
+            if (func instanceof LambdaExpression lambdaExpression) {
+                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+                return applyLambda(lambdaExpression, argsList);
+            }
+        }
+        first = evaluate(first);
+        if (first instanceof LambdaExpression lambdaExpression) {
+            ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+            return applyLambda(lambdaExpression, argsList);
         }
 
         return list;
@@ -362,8 +376,8 @@ public class Evaluator {
 
                 if (keyExpr instanceof AtomExpression keyAtom) {
                     if (keyAtom.getToken() instanceof VariableToken variableToken) {
-                        if (enviroment.get(variableToken.getValue()) == null) {
-                            enviroment.put(variableToken.getValue(), valueExpr);
+                        if (!environment.contains(variableToken.getValue())) {
+                            environment.define(variableToken.getValue(), valueExpr);
                             return valueExpr;
                         }
                         else {
@@ -394,16 +408,52 @@ public class Evaluator {
 
                 String varName = variableToken.getValue();
 
-                if (!enviroment.containsKey(varName)) {
+                if (!environment.contains(varName)) {
                     throw new InvalidVariable(varName);
                 }
 
-                enviroment.put(varName, valueExpr);
+                environment.set(varName, valueExpr);
                 return valueExpr;
+            }
+            case LAMBDA -> {
+                if (args.size() != 2) {
+                    throw new SymbolArgumentException(args.toString());
+                }
+
+                Expression paramsExpr = args.get(0);
+                Expression bodyExpr = args.get(1);
+
+                if (paramsExpr instanceof ListExpressions list) {
+                    return new LambdaExpression(list, bodyExpr, environment);
+                }
+
             }
             default -> throw new UnsupportedSpecialForm(specialFormToken.toString());
         }
         throw new UnsupportedSpecialForm(specialFormToken.toString());
     }
 
+    private Expression applyLambda(LambdaExpression lambda, ListExpressions listExpressions) {
+        List<Expression> args = listExpressions.getExpressions();
+        List<Expression> params = lambda.getParameters().getExpressions();
+
+        if (args.size() != params.size()) {
+            throw new RuntimeException("Wrong number of arguments for lambda");
+        }
+
+        Environment localEnv = new Environment(lambda.getClosureEnv());
+
+        for (int i = 0; i < params.size(); i++) {
+            Expression paramExpr = params.get(i);
+
+            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                throw new RuntimeException("Invalid parameter name in lambda");
+            }
+
+            localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+        }
+
+        Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
+        return localEvaluator.evaluate(lambda.getBody());
+    }
 }
