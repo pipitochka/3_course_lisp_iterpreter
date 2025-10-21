@@ -15,6 +15,14 @@ public class Parser {
     private final List<Token> tokens;
     private int pos = 0;
 
+    public List<Expression> parseAll() {
+        List<Expression> expressions = new ArrayList<>();
+        while (pos < tokens.size()) {
+            expressions.add(parseExp());
+        }
+        return expressions;
+    }
+
     public Expression parse() {
         if (tokens.isEmpty()) {
             return new ListExpressions(Collections.emptyList());

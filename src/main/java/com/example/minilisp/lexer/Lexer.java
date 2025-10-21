@@ -148,6 +148,7 @@ public class Lexer {
             case "symbol": return new SpecialFormToken(SpecialForm.SYMBOL);
             case "def": return new SpecialFormToken(SpecialForm.DEF);
             case "set": return new SpecialFormToken(SpecialForm.SET);
+            case "lambda": return new SpecialFormToken(SpecialForm.LAMBDA);
             case "+": return new OperatorToken(Operators.ADD);
             case "-": return new OperatorToken(Operators.SUB);
             case "*": return new OperatorToken(Operators.MULT);
