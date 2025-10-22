@@ -1,0 +1,7 @@
+(def a 1000)
+(def add (lambda (a) (dambda (x) (+ x a))))
+(def all (lambda (a) (lambda (x) (+ x a))))
+(def add-10 (add 10))
+(def all-10 (all 10))
+(print (all-10 100))
+(print (add-10 100))

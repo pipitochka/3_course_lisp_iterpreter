@@ -26,7 +26,7 @@ public class Lexer {
             char c = input.charAt(pos);
 
             switch (c) {
-                case ' ', '\t', '\r', '\n':
+                case ' ', '\t', '\r', '\n', ',':
                     pos++;
                     continue;
                 case '(':
@@ -149,6 +149,8 @@ public class Lexer {
             case "def": return new SpecialFormToken(SpecialForm.DEF);
             case "set": return new SpecialFormToken(SpecialForm.SET);
             case "lambda": return new SpecialFormToken(SpecialForm.LAMBDA);
+            case "dambda": return new SpecialFormToken(SpecialForm.DAMBDA);
+            case "macro": return new SpecialFormToken(SpecialForm.MACRO);
             case "+": return new OperatorToken(Operators.ADD);
             case "-": return new OperatorToken(Operators.SUB);
             case "*": return new OperatorToken(Operators.MULT);

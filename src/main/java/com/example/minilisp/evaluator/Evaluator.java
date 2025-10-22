@@ -2,10 +2,7 @@ package com.example.minilisp.evaluator;
 
 import com.example.minilisp.enviroment.Environment;
 import com.example.minilisp.exceptions.*;
-import com.example.minilisp.parser.AtomExpression;
-import com.example.minilisp.parser.Expression;
-import com.example.minilisp.parser.LambdaExpression;
-import com.example.minilisp.parser.ListExpressions;
+import com.example.minilisp.parser.*;
 import com.example.minilisp.tokens.*;
 
 import java.lang.UnsupportedOperationException;
@@ -82,14 +79,31 @@ public class Evaluator {
                 ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
                 return applyLambda(lambdaExpression, argsList);
             }
+            if (func instanceof DambdaExpression dambdaExpression) {
+                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+                return applyDambda(dambdaExpression, argsList);
+            }
+            if (func instanceof MacroExpression macroExpression) {
+                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+                return applyMacro(macroExpression, argsList);
+            }
+
         }
         first = evaluate(first);
         if (first instanceof LambdaExpression lambdaExpression) {
             ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
             return applyLambda(lambdaExpression, argsList);
         }
+        if (first instanceof DambdaExpression dambdaExpression) {
+            ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+            return applyDambda(dambdaExpression, argsList);
+        }
+        if (first instanceof MacroExpression macroExpression) {
+            ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
+            return applyMacro(macroExpression, argsList);
+        }
 
-        return list;
+        throw new InvalidArgumentException("Not callable" + first);
     }
 
     private AtomExpression applyOperator(OperatorToken operatorToken, List<Expression> args) {
@@ -428,6 +442,31 @@ public class Evaluator {
                 }
 
             }
+            case DAMBDA -> {
+                if (args.size() != 2) {
+                    throw new SymbolArgumentException(args.toString());
+                }
+
+                Expression paramsExpr = args.get(0);
+                Expression bodyExpr = args.get(1);
+
+                if (paramsExpr instanceof ListExpressions list) {
+                    return new DambdaExpression(list, bodyExpr);
+                }
+            }
+            case MACRO -> {
+                if (args.size() != 2) {
+                    throw new SymbolArgumentException(args.toString());
+                }
+
+                Expression paramsExpr = args.get(0);
+                Expression bodyExpr = args.get(1);
+
+                if (paramsExpr instanceof ListExpressions list) {
+                    return new MacroExpression(list, bodyExpr);
+                }
+
+            }
             default -> throw new UnsupportedSpecialForm(specialFormToken.toString());
         }
         throw new UnsupportedSpecialForm(specialFormToken.toString());
@@ -456,4 +495,78 @@ public class Evaluator {
         Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
         return localEvaluator.evaluate(lambda.getBody());
     }
+
+    private Expression applyDambda(DambdaExpression damda, ListExpressions listExpressions) {
+        List<Expression> args = listExpressions.getExpressions();
+        List<Expression> params = damda.getParameters().getExpressions();
+
+        if (args.size() != params.size()) {
+            throw new RuntimeException("Wrong number of arguments for lambda");
+        }
+
+        Environment localEnv = new Environment(environment);
+
+        for (int i = 0; i < params.size(); i++) {
+            Expression paramExpr = params.get(i);
+
+            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                throw new RuntimeException("Invalid parameter name in dambda");
+            }
+
+            localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+        }
+
+        Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
+        return localEvaluator.evaluate(damda.getBody());
+    }
+
+    private Expression applyMacro(MacroExpression macro, ListExpressions listExpressions) {
+        List<Expression> args = listExpressions.getExpressions();
+        List<Expression> params = macro.getParameters().getExpressions();
+
+        if (args.size() != params.size()) {
+            throw new RuntimeException("Wrong number of arguments for lambda");
+        }
+
+        Environment localEnv = new Environment();
+
+        for (int i = 0; i < params.size(); i++) {
+            Expression paramExpr = params.get(i);
+
+            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                throw new RuntimeException("Invalid parameter name in dambda");
+            }
+
+            localEnv.define(varToken.getValue(), args.get(i));
+        }
+
+
+        //Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
+        var expr = macroExpand(macro.getBody(), localEnv);
+        //System.out.println(expr);
+        return evaluate(expr);
+    }
+
+    private Expression macroExpand(Expression body, Environment env){
+
+        if (body instanceof AtomExpression atom) {
+            if (atom.getToken() instanceof VariableToken varToken) {
+                try {
+                    return env.get(varToken.getValue());
+                } catch (InvalidVariable e) {
+                    return body;
+                }
+            }
+        }
+        if (body instanceof ListExpressions listExpressions) {
+            return new ListExpressions(listExpressions.getExpressions()
+                    .stream()
+                    .map(el -> macroExpand(el, env))
+                    .toList()
+            );
+        }
+        return body;
+    }
+
 }
+

@@ -1,0 +1,7 @@
+(def fact-1 (dambda (n)
+    (if (< n 2)
+        1
+        (* n (fact-1 (- n 1)))
+    )
+))
+(print (fact-1 5))

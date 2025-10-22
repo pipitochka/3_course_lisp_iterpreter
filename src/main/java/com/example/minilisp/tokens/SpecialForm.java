@@ -14,5 +14,7 @@ public enum SpecialForm {
     SYMBOL,
     DEF,
     SET,
-    LAMBDA
+    LAMBDA,
+    DAMBDA,
+    MACRO
 }

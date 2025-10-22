@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import java.util.HashMap;
 
 public class Environment {
+
     private final HashMap<String, Expression> variables = new HashMap<>();
+
     private final Environment parent;
 
     public Environment() {

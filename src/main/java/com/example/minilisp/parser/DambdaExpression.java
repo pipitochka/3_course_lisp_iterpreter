@@ -4,14 +4,10 @@ import com.example.minilisp.enviroment.Environment;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
 @RequiredArgsConstructor
 @Getter
-public class LambdaExpression implements Expression {
+public class DambdaExpression implements Expression {
     private final ListExpressions parameters;
 
     private final Expression body;
-
-    private final Environment closureEnv;
 }
