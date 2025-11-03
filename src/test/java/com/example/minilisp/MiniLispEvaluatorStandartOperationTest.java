@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 
-public class MiniLispEvaluatorTest {
+public class MiniLispEvaluatorStandartOperationTest {
 
     private Environment enviroments;
 
@@ -194,27 +194,5 @@ public class MiniLispEvaluatorTest {
                 "    ))\n" +
                 "  (eval f)\n" +
                 " ", "6");
-    }
-
-    @Test
-    public void testLambda() {
-        test("((lambda (x y) (+ x y)) 2 3)", "6");
-    }
-
-    @Test
-    public void testLambda2() {
-        test("(def add (lambda (a b) (+ a b)))\n"  +
-                "(add 10 20)", "30");
-    }
-
-    @Test
-    public void testLambda3() {
-        test("(def fact (lambda (n)\n" +
-                "    (if (< n 2)\n" +
-                "        1\n" +
-                "        (* n (fact (- n 1)))\n" +
-                "    )\n" +
-                "))"  +
-                "(fact 5)", "120");
     }
 }

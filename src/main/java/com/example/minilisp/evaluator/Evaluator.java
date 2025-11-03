@@ -208,7 +208,6 @@ public class Evaluator {
         throw new UnsupportedOperationException(op.toString());
     }
 
-
     private Expression applySpecialForm(SpecialFormToken specialFormToken, List<Expression> args) {
         switch (specialFormToken.getSpecialForm()){
             case QUOTE -> {
@@ -462,49 +461,130 @@ public class Evaluator {
         List<Expression> args = listExpressions.getExpressions();
         List<Expression> params = lambda.getParameters().getExpressions();
 
-        if (args.size() != params.size()) {
-            throw new RuntimeException("Wrong number of arguments for lambda");
-        }
-
         Environment localEnv = new Environment(lambda.getClosureEnv());
 
-        for (int i = 0; i < params.size(); i++) {
-            Expression paramExpr = params.get(i);
+        int paramCount = params.size();
+        int argCount = args.size();
 
-            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
-                throw new RuntimeException("Invalid parameter name in lambda");
+//        for (int i = 0; i < params.size(); i++) {
+//            Expression paramExpr = params.get(i);
+//
+//            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+//                throw new RuntimeException("Invalid parameter name in lambda");
+//            }
+//
+//            localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+//        }
+
+        if (argCount > paramCount) {
+            for (int i = 0; i < paramCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in lambda");
+                }
+
+                if (i == paramCount - 1) {
+                    List<Expression> lastArgs = new ArrayList<>();
+                    for (int j = paramCount - 1; j < argCount; j++) {
+                        lastArgs.add((args.get(j)));
+                    }
+                    ListExpressions newListExpressions = new ListExpressions(lastArgs);
+                    localEnv.define(varToken.getValue(), newListExpressions);
+                } else {
+                    localEnv.define(varToken.getValue(), args.get(i));
+                }
+            }
+        } else if (argCount < paramCount) {
+            List<Expression> remainingParams = params.subList(argCount, paramCount);
+
+            Environment partiallyAppliedEnv = new Environment(lambda.getClosureEnv());
+            for (int i = 0; i < argCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in lambda");
+                }
+                partiallyAppliedEnv.define(varToken.getValue(), args.get(i));
             }
 
-            localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+            return new LambdaExpression(
+                    new ListExpressions(remainingParams),
+                    lambda.getBody(),
+                    partiallyAppliedEnv
+            );
+        } else {
+            for (int i = 0; i < paramCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in lambda");
+                }
+                localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+            }
         }
 
         Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
         return localEvaluator.evaluate(lambda.getBody());
     }
 
-    private Expression applyDambda(DambdaExpression damda, ListExpressions listExpressions) {
+    private Expression applyDambda(DambdaExpression dambda, ListExpressions listExpressions) {
         List<Expression> args = listExpressions.getExpressions();
-        List<Expression> params = damda.getParameters().getExpressions();
-
-        if (args.size() != params.size()) {
-            throw new RuntimeException("Wrong number of arguments for lambda");
-        }
+        List<Expression> params = dambda.getParameters().getExpressions();
 
         Environment localEnv = new Environment(environment);
 
-        for (int i = 0; i < params.size(); i++) {
-            Expression paramExpr = params.get(i);
+        int paramCount = params.size();
+        int argCount = args.size();
 
-            if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
-                throw new RuntimeException("Invalid parameter name in dambda");
+        if (argCount > paramCount) {
+            // Загребаем лишние аргументы в последний параметр
+            for (int i = 0; i < paramCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in dambda");
+                }
+
+                if (i == paramCount - 1) {
+                    List<Expression> restArgs = new ArrayList<>();
+                    for (int j = i; j < argCount; j++) {
+                        restArgs.add((args.get(j)));
+                    }
+                    localEnv.define(varToken.getValue(), new ListExpressions(restArgs));
+                } else {
+                    localEnv.define(varToken.getValue(), (args.get(i)));
+                }
+            }
+        } else if (argCount < paramCount) {
+            // Возвращаем новую даммбду с оставшимися параметрами
+            List<Expression> remainingParams = params.subList(argCount, paramCount);
+
+            Environment partiallyAppliedEnv = new Environment(environment);
+            for (int i = 0; i < argCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in dambda");
+                }
+                partiallyAppliedEnv.define(varToken.getValue(), args.get(i));
             }
 
-            localEnv.define(varToken.getValue(), evaluate(args.get(i)));
+            return new LambdaExpression(
+                    new ListExpressions(new ArrayList<>(remainingParams)),
+                    dambda.getBody(),
+                    partiallyAppliedEnv
+            );
+        } else {
+            // Равное количество
+            for (int i = 0; i < paramCount; i++) {
+                Expression paramExpr = params.get(i);
+                if (!(paramExpr instanceof AtomExpression atom) || !(atom.getToken() instanceof VariableToken varToken)) {
+                    throw new RuntimeException("Invalid parameter name in dambda");
+                }
+                localEnv.define(varToken.getValue(), args.get(i));
+            }
         }
 
         Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
-        return localEvaluator.evaluate(damda.getBody());
+        return localEvaluator.evaluate(dambda.getBody());
     }
+
 
     private Expression applyMacro(MacroExpression macro, ListExpressions listExpressions) {
         List<Expression> args = listExpressions.getExpressions();
