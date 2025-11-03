@@ -206,4 +206,15 @@ public class MiniLispEvaluatorTest {
         test("(def add (lambda (a b) (+ a b)))\n"  +
                 "(add 10 20)", "30");
     }
+
+    @Test
+    public void testLambda3() {
+        test("(def fact (lambda (n)\n" +
+                "    (if (< n 2)\n" +
+                "        1\n" +
+                "        (* n (fact (- n 1)))\n" +
+                "    )\n" +
+                "))"  +
+                "(fact 5)", "120");
+    }
 }

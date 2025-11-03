@@ -1,0 +1,22 @@
+(def acc-constructor (lambda (val)
+    (do
+        (def get (lambda () val))
+        (def add (lambda (delta)
+            (do
+                (set val (+ val delta))
+                val
+            )
+        ))
+        (def sub (lambda (delta)
+            (do
+                (set val (- val delta))
+                val
+            )
+        ))
+        (def dispatch (lambda (method-name)
+            (if (== method-name "add") add (if (== method-name "sub") sub get)
+            )
+        ))
+        dispatch
+    )
+))

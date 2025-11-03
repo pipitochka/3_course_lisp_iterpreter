@@ -74,20 +74,6 @@ public class Evaluator {
                 List<Expression> args = list.getExpressions().subList(1, list.getExpressions().size());
                 return applySpecialForm(specialFormToken, args);
             }
-            Expression func = evaluate(atom);
-            if (func instanceof LambdaExpression lambdaExpression) {
-                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
-                return applyLambda(lambdaExpression, argsList);
-            }
-            if (func instanceof DambdaExpression dambdaExpression) {
-                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
-                return applyDambda(dambdaExpression, argsList);
-            }
-            if (func instanceof MacroExpression macroExpression) {
-                ListExpressions argsList = new ListExpressions(list.getExpressions().subList(1, list.getExpressions().size()));
-                return applyMacro(macroExpression, argsList);
-            }
-
         }
         first = evaluate(first);
         if (first instanceof LambdaExpression lambdaExpression) {
@@ -541,9 +527,8 @@ public class Evaluator {
         }
 
 
-        //Evaluator localEvaluator = new Evaluator(localEnv, inputScanner);
         var expr = macroExpand(macro.getBody(), localEnv);
-        //System.out.println(expr);
+
         return evaluate(expr);
     }
 
