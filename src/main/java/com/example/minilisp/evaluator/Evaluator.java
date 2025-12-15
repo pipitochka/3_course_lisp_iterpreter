@@ -48,7 +48,7 @@ public class Evaluator {
         if (token instanceof VariableToken variable){
             Expression value = environment.get(variable.getValue());
             if (value == null) {
-                throw new InvalidVariable(variable.getValue());
+                throw new EvaluatorException("No value: " + variable.getValue());
             }
             return value;
         }
@@ -89,12 +89,12 @@ public class Evaluator {
             return applyMacro(macroExpression, argsList);
         }
 
-        throw new InvalidArgumentException("Not callable" + first);
+        throw new EvaluatorException("Not callable" + first);
     }
 
     private AtomExpression applyOperator(OperatorToken operatorToken, List<Expression> args) {
         if (args.size() < 2){
-            throw new InvalidAmountOfArgs(operatorToken.toString());
+            throw new EvaluatorException("Not enough tokens " + operatorToken.toString());
         }
 
         Expression first = args.get(0);
@@ -128,7 +128,7 @@ public class Evaluator {
                         }
                         case DIV -> {
                             if (bInt.getValue() == 0){
-                                throw new DivisionByZeroException();
+                                throw new EvaluatorException("Division by zero");
                             }
                             return new IntToken(aInt.getValue() / bInt.getValue());
                         }
@@ -177,7 +177,7 @@ public class Evaluator {
                         case GE -> da >= db;
                         case NE -> da != db;
                         case EQ -> da == db;
-                        default -> throw new InvalidArgumentException(op.toString());
+                        default -> throw new EvaluatorException("Invalid operator" + op.toString());
                     };
 
                     return new BooleanToken(res);
@@ -186,7 +186,7 @@ public class Evaluator {
                     boolean res = switch (op.getOperator()){
                         case NE -> !aString.equals(bString);
                         case EQ -> aString.equals(bString);
-                        default -> throw new InvalidArgumentException(op.toString());
+                        default -> throw new EvaluatorException("Invalid operation between strings" +  op.toString());
                     };
 
                     return new BooleanToken(res);
@@ -197,7 +197,7 @@ public class Evaluator {
                     boolean res = switch (op.getOperator()){
                         case NE -> da != db;
                         case EQ -> da == db;
-                        default -> throw new InvalidArgumentException(op.toString());
+                        default -> throw new EvaluatorException("Invalid operation between boolean" +  op.toString());
                     };
 
                     return new BooleanToken(res);
@@ -212,19 +212,19 @@ public class Evaluator {
         switch (specialFormToken.getSpecialForm()){
             case QUOTE -> {
                 if (args.size() != 1) {
-                    throw new QuoteTooManyArgs(args.size());
+                    throw new EvaluatorException("Quote has to many arguments" + args.size());
                 }
                 return args.get(0);
             }
             case EVAL -> {
                 if (args.size() != 1) {
-                    throw new InvalidArgumentException("EVAL expects 1 argument");
+                    throw new EvaluatorException("Eval has to many arguments" + args.size());
                 }
                 Expression value = evaluate(args.get(0));
                 if (value instanceof ListExpressions list) {
                     return evaluate(list);
                 } else {
-                    throw new InvalidArgumentException("EVAL expects a list, got: " + value);
+                    throw new EvaluatorException("EVAL expects a list, got: " + value);
                 }
             }
             case TYPEOF -> {
@@ -265,7 +265,7 @@ public class Evaluator {
             }
             case CONS -> {
                 if (args.size() != 2) {
-                    throw new InvalidArgumentException("CONS expects 2 arguments");
+                    throw new EvaluatorException("CONS expects 2 arguments");
                 }
                 Expression first = evaluate(args.get(0));
                 Expression second = evaluate(args.get(1));
@@ -300,11 +300,11 @@ public class Evaluator {
                             list.getExpressions().subList(1, list.getExpressions().size())
                     );
                 }
-                throw new CdrInvalidArgument(args.toString());
+                throw new EvaluatorException("CDR invalid " + args.toString());
             }
             case IF -> {
                 if (args.size() != 3) {
-                    throw new IfInvalidArguments(args.toString());
+                    throw new EvaluatorException("If invalid count of arguments" + args.toString());
                 }
                 var calculed = evaluate(args.get(0));
                 if (calculed instanceof AtomExpression atom) {
@@ -317,7 +317,7 @@ public class Evaluator {
                         }
                     }
                 }
-                throw new IfInvalidArguments(args.toString());
+                throw new EvaluatorException("If invalid with this: " + args.toString());
             }
             case DO -> {
                 Expression expr = new AtomExpression(new NilToken());
@@ -328,7 +328,7 @@ public class Evaluator {
             }
             case PRINT -> {
                 if (args.size() != 1) {
-                    throw new PrintInvalidArgumentException(args.toString());
+                    throw new EvaluatorException("Print invalid arguments" + args.toString());
                 }
                 var result = evaluate(args.get(0));
                 System.out.println(result);
@@ -355,7 +355,7 @@ public class Evaluator {
             }
             case SYMBOL -> {
                 if (args.size() != 1) {
-                    throw new SymbolArgumentException(args.toString());
+                    throw new EvaluatorException("Symbol invalid arguments" + args.toString());
                 }
                 var result = evaluate(args.get(0));
                 if (result instanceof AtomExpression atom) {
@@ -363,11 +363,11 @@ public class Evaluator {
                         return new AtomExpression(new VariableToken(stringToken.getValue()));
                     }
                 }
-                throw new SymbolArgumentException(result.toString());
+                throw new EvaluatorException("Symbol invalid arguments" + args.toString());
             }
             case DEF -> {
                 if (args.size() != 2) {
-                    throw new DefArgumentException(args.toString());
+                    throw new EvaluatorException("Def invalid count of arguments" + args.toString());
                 }
 
                 var keyExpr = args.get(0);
@@ -380,35 +380,35 @@ public class Evaluator {
                             return valueExpr;
                         }
                         else {
-                            throw new DefArgumentException("Exsits");
+                            throw new EvaluatorException("Exsits DEF");
                         }
                     } else {
-                        throw new DefArgumentException("Expected a string as variable name");
+                        throw new EvaluatorException("Expected a string as variable name for DEF");
                     }
                 } else {
-                    throw new DefArgumentException("Invalid arguments for DEF");
+                    throw new EvaluatorException("Invalid arguments for DEF");
                 }
             }
             case SET -> {
                 if (args.size() != 2) {
-                    throw new SetArgumentException(args.toString());
+                    throw new EvaluatorException("Set invalid count of arguments " + args.toString());
                 }
 
                 var keyExpr = args.get(0);
                 var valueExpr = evaluate(args.get(1));
 
                 if (!(keyExpr instanceof AtomExpression keyAtom)) {
-                    throw new SetArgumentException("Expected variable name as first argument");
+                    throw new EvaluatorException("Expected variable name as first argument in SET");
                 }
 
                 if (!(keyAtom.getToken() instanceof VariableToken variableToken)) {
-                    throw new SetArgumentException("Expected string as variable name");
+                    throw new EvaluatorException("Expected string as variable name as second argument in SET");
                 }
 
                 String varName = variableToken.getValue();
 
                 if (!environment.contains(varName)) {
-                    throw new InvalidVariable(varName);
+                    throw new EvaluatorException(varName);
                 }
 
                 environment.set(varName, valueExpr);
@@ -416,7 +416,7 @@ public class Evaluator {
             }
             case LAMBDA -> {
                 if (args.size() != 2) {
-                    throw new SymbolArgumentException(args.toString());
+                    throw new EvaluatorException("Lamda argument invlid counter " + args.toString());
                 }
 
                 Expression paramsExpr = args.get(0);
@@ -429,7 +429,7 @@ public class Evaluator {
             }
             case DAMBDA -> {
                 if (args.size() != 2) {
-                    throw new SymbolArgumentException(args.toString());
+                    throw new EvaluatorException("Dambda argument invlid counter " + args.toString());
                 }
 
                 Expression paramsExpr = args.get(0);
@@ -441,7 +441,7 @@ public class Evaluator {
             }
             case MACRO -> {
                 if (args.size() != 2) {
-                    throw new SymbolArgumentException(args.toString());
+                    throw new EvaluatorException("Macro argument invlid counter " + args.toString());
                 }
 
                 Expression paramsExpr = args.get(0);
@@ -452,9 +452,9 @@ public class Evaluator {
                 }
 
             }
-            default -> throw new UnsupportedSpecialForm(specialFormToken.toString());
+            default -> throw new EvaluatorException("Unsupported special form" + specialFormToken.toString());
         }
-        throw new UnsupportedSpecialForm(specialFormToken.toString());
+        throw new EvaluatorException("Unsupported special form" + specialFormToken.toString());
     }
 
     private Expression applyLambda(LambdaExpression lambda, ListExpressions listExpressions) {
@@ -618,7 +618,7 @@ public class Evaluator {
             if (atom.getToken() instanceof VariableToken varToken) {
                 try {
                     return env.get(varToken.getValue());
-                } catch (InvalidVariable e) {
+                } catch (MacroException e) {
                     return body;
                 }
             }

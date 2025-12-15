@@ -1,6 +1,6 @@
 package com.example.minilisp.parser;
 
-import com.example.minilisp.exceptions.IncorrectParenCounter;
+import com.example.minilisp.exceptions.ParserException;
 import com.example.minilisp.tokens.*;
 import lombok.RequiredArgsConstructor;
 
@@ -48,7 +48,7 @@ public class Parser {
             while (!(tokens.get(pos) instanceof RParenToken)){
                 list.add(parseExp());
                 if (pos >= tokens.size()) {
-                    throw new IncorrectParenCounter();
+                    throw new ParserException("Incorrect paren count");
                 }
             }
             pos++;

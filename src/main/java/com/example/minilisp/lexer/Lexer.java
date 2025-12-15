@@ -1,9 +1,7 @@
 package com.example.minilisp.lexer;
 
-import com.example.minilisp.exceptions.IncorrectCharInInput;
-import com.example.minilisp.exceptions.IncorrectNumberException;
-import com.example.minilisp.exceptions.IncorrectParenCounter;
-import com.example.minilisp.exceptions.IncorrectStringInInput;
+import com.example.minilisp.exceptions.LexerException;
+import com.example.minilisp.exceptions.ParserException;
 import com.example.minilisp.tokens.*;
 
 import java.util.ArrayList;
@@ -38,7 +36,7 @@ public class Lexer {
                     tokens.add(new RParenToken());
                     parenCount--;
                     if (parenCount < 0) {
-                        throw new IncorrectParenCounter();
+                        throw new ParserException("Parenthesis do not closed");
                     }
                     pos++;
                     continue;
@@ -57,14 +55,14 @@ public class Lexer {
                         tokens.add(readSymbol());
                         continue;
                     } else {
-                        throw new IncorrectCharInInput(c);
+                        throw new LexerException("Invalid character '" + c + "'");
                     }
             }
 
         }
 
         if (parenCount != 0) {
-            throw new IncorrectParenCounter();
+            throw new ParserException("Invalid parenthesis");
         }
 
         return tokens;
@@ -80,7 +78,7 @@ public class Lexer {
             pos++;
         }
         if (input.charAt(pos) != '"'){
-            throw new IncorrectStringInInput();
+            throw new ParserException("Invalid string");
         }
 
         pos++;
@@ -113,7 +111,7 @@ public class Lexer {
                 return new IntToken(Integer.parseInt(numberStr));
             }
         } catch (NumberFormatException e) {
-            throw new IncorrectNumberException();
+            throw new ParserException("Invalid number");
         }
     }
 
